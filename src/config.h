@@ -300,6 +300,7 @@ namespace config {
     bool motion_as_ds4;  ///< Prefer PlayStation-style emulation for client gamepads with motion controls.
     bool touchpad_as_ds4;  ///< Prefer PlayStation-style emulation for client gamepads with touchpad input.
     bool virtualhid_randomize_mac;  ///< Randomize the libvirtualhid virtual controller MAC address.
+    bool virtualhid_bluetooth_transport;  ///< Keep Bluetooth report framing for libvirtualhid PlayStation-style controllers on Windows.
 
     bool keyboard;  ///< Enable keyboard input from clients.
     bool key_rightalt_to_key_win;  ///< Map the client Right Alt key to the Windows key.

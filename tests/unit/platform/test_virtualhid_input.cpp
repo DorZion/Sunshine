@@ -434,6 +434,29 @@ TEST_F(VirtualHidDeviceTest, AllocatesManualProfileAndTranslatesFullState) {
   platf::virtualhid::gamepad_update(*context(), 1, input_state);
 }
 
+TEST_F(VirtualHidDeviceTest, EmulatesTouchpadClickFromBackOnlyForClientsWithoutTouchpadButton) {
+  using enum lvh::GamepadButton;
+  config::input.ds4_back_as_touchpad_click = true;
+
+  auto *xinput_client = allocate_gamepad("ds5"sv, LI_CTYPE_XBOX, 0, 0);
+  ASSERT_NE(xinput_client, nullptr);
+  platf::virtualhid::gamepad_update(*context(), 0, {platf::BACK, 0, 0, 0, 0, 0, 0});
+  EXPECT_TRUE(xinput_client->state().buttons.test(back));
+  EXPECT_TRUE(xinput_client->state().buttons.test(touchpad));
+
+  config::input.gamepad = "auto"sv;
+  const platf::gamepad_arrival_t playstation_metadata {LI_CTYPE_PS, 0, platf::BACK | platf::TOUCHPAD_BUTTON};
+  ASSERT_EQ(platf::virtualhid::alloc_gamepad(*context(), {1, 1}, playstation_metadata, feedback_queue()), 0);
+  auto *touchpad_client = platf::virtualhid::gamepad_adapter_for_testing(*context(), 1);
+  ASSERT_NE(touchpad_client, nullptr);
+  platf::virtualhid::gamepad_update(*context(), 1, {platf::BACK, 0, 0, 0, 0, 0, 0});
+  EXPECT_TRUE(touchpad_client->state().buttons.test(back));
+  EXPECT_FALSE(touchpad_client->state().buttons.test(touchpad));
+
+  platf::virtualhid::free_gamepad(*context(), 0);
+  platf::virtualhid::free_gamepad(*context(), 1);
+}
+
 TEST_P(VirtualHidAutoProfileTest, SelectsProfileFromClientMetadata) {
   const auto &test_case = GetParam();
   auto *adapter = allocate_gamepad("auto"sv, test_case.type, test_case.capabilities);

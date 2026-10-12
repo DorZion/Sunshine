@@ -158,6 +158,7 @@ describe('gamepad input configuration', () => {
           touchpad_as_ds4: 'enabled',
           ds4_back_as_touchpad_click: 'enabled',
           virtualhid_randomize_mac: 'enabled',
+          virtualhid_bluetooth_transport: 'disabled',
           keyboard: 'disabled',
           mouse: 'disabled',
         },
@@ -219,5 +220,16 @@ describe('gamepad input configuration', () => {
       'auto', 'x360', 'ds4',
     ])
     expect(wrapper.get('#gamepad').element.value).toBe('auto')
+  })
+
+  it.each([
+    ['windows', 'virtualhid', 'ds5', true],
+    ['windows', 'vigembus', 'ds4', false],
+    ['windows', 'virtualhid', 'x360', false],
+    ['macos', 'virtualhid', 'ds5', false],
+  ])('shows Bluetooth PlayStation reports on %s with %s and %s: %s', (platform, gamepadDriver, gamepad, shown) => {
+    const wrapper = mountInputs(platform, gamepadDriver, gamepad)
+
+    expect(wrapper.find('#virtualhid_bluetooth_transport').exists()).toBe(shown)
   })
 })
