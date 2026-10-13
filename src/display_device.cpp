@@ -741,7 +741,9 @@ namespace display_device {
       DD_DATA.persistence_watch.reset();
 #ifdef _WIN32
       return std::make_unique<SettingsManager>(
-        std::make_shared<WinDisplayDevice>(std::make_shared<WinApiLayer>(), false),
+        // Save to Windows' layout database: the session-only topology path cannot reliably activate an inactive display.
+        // The original layout is restored by the revert loop instead.
+        std::make_shared<WinDisplayDevice>(std::make_shared<WinApiLayer>()),
         std::make_shared<sunshine_audio_context_t>(),
         std::make_unique<PersistentState>(make_persistence_watch(persistence_filepath)),
         WinWorkarounds {
