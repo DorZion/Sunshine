@@ -15,6 +15,8 @@
 #include <numbers>
 #include <optional>
 #include <random>
+#include <span>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -35,6 +37,7 @@ namespace platf::virtualhid {
     feedback_queue_t feedback_queue;  ///< Feedback queue for client output events.
     std::array<std::optional<std::uint32_t>, 2> touch_ids;  ///< Client touch IDs assigned to libvirtualhid slots.
     std::uint8_t client_relative_index = 0;  ///< Client-relative controller index.
+    bool client_has_touchpad_button = false;  ///< Whether the client gamepad reported its own touchpad button.
     bool has_last_rumble = false;  ///< Whether last rumble values are valid.
     std::uint16_t last_low_frequency_rumble = 0;  ///< Last low-frequency rumble value.
     std::uint16_t last_high_frequency_rumble = 0;  ///< Last high-frequency rumble value.
@@ -269,7 +272,15 @@ namespace platf::virtualhid {
       }
     }
 
-    lvh::GamepadState make_gamepad_state(const gamepad_state_t &state, const lvh::GamepadProfileSupport &support) {
+    /**
+     * @brief Translate Moonlight gamepad input into libvirtualhid gamepad state.
+     *
+     * @param state Moonlight gamepad state.
+     * @param support Capabilities of the virtual gamepad profile.
+     * @param client_has_touchpad_button Whether the client gamepad has its own touchpad button.
+     * @return libvirtualhid gamepad state.
+     */
+    lvh::GamepadState make_gamepad_state(const gamepad_state_t &state, const lvh::GamepadProfileSupport &support, bool client_has_touchpad_button) {
       using enum lvh::GamepadButton;
 
       lvh::GamepadState result;
@@ -293,7 +304,8 @@ namespace platf::virtualhid {
       result.buttons.set(misc1, support.supports_misc1_button && (flags & MISC_BUTTON));
       result.buttons.set(touchpad, support.supports_touchpad_button && (flags & TOUCHPAD_BUTTON));
 
-      if (support.supports_touchpad_button && config::input.ds4_back_as_touchpad_click && configured_gamepad_supports_touchpad() && (flags & BACK)) {
+      // Clients with a real touchpad button send Back for Share/Create, so only emulate the click for pads without one.
+      if (!client_has_touchpad_button && support.supports_touchpad_button && config::input.ds4_back_as_touchpad_click && configured_gamepad_supports_touchpad() && (flags & BACK)) {
         result.buttons.set(touchpad);
       }
 
@@ -446,6 +458,14 @@ namespace platf::virtualhid {
      * @param output Output event reported by libvirtualhid.
      */
     void handle_output(const std::shared_ptr<gamepad_context_t> &gamepad, const lvh::GamepadOutput &output) {
+      // TEMP diagnostic: dump the first output bytes to find which DualSense report or flags the game sends.
+      if (!output.raw_report.empty()) {
+        std::string bytes;
+        for (const auto byte : std::span {output.raw_report}.first(std::min<std::size_t>(output.raw_report.size(), 48U))) {
+          bytes += std::format("{:02X} ", byte);
+        }
+        BOOST_LOG(verbose) << "[libvirtualhid] output kind="sv << static_cast<int>(output.kind) << " size="sv << output.raw_report.size() << " bytes="sv << bytes;
+      }
       std::lock_guard lock {gamepad->feedback_mutex};
       switch (output.kind) {
         case lvh::GamepadOutputKind::rumble:
@@ -709,6 +729,7 @@ namespace platf::virtualhid {
     lvh::CreateGamepadOptions options;
     options.profile = profile;
     options.metadata = gamepad_metadata(id, metadata, profile);
+    options.preserve_bus_type = config::input.virtualhid_bluetooth_transport;
     auto created = lvh::GamepadStateAdapter::create(*context.runtime, options);
     if (!created) {
       log_failure("create libvirtualhid gamepad"sv, created.status);
@@ -719,6 +740,7 @@ namespace platf::virtualhid {
     gamepad->adapter = std::move(created.adapter);
     gamepad->feedback_queue = std::move(feedback_queue);
     gamepad->client_relative_index = id.clientRelativeIndex;
+    gamepad->client_has_touchpad_button = metadata.supportedButtons & TOUCHPAD_BUTTON;
     gamepad->adapter->set_output_callback([weak_gamepad = std::weak_ptr {gamepad}](const lvh::GamepadOutput &output) {
       if (const auto gamepad = weak_gamepad.lock()) {
         handle_output(gamepad, output);
@@ -781,7 +803,7 @@ namespace platf::virtualhid {
     }
 
     auto &gamepad = context.gamepads[nr];
-    auto updated_state = make_gamepad_state(state, gamepad->adapter->support());
+    auto updated_state = make_gamepad_state(state, gamepad->adapter->support(), gamepad->client_has_touchpad_button);
     const auto &cached_state = gamepad->adapter->state();
     updated_state.acceleration = cached_state.acceleration;
     updated_state.gyroscope = cached_state.gyroscope;
