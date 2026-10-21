@@ -40,6 +40,9 @@ on:
       # Azure Tenant ID for Artifact Signing
       AZURE_TENANT_ID:
         required: false
+      # Token with read access to private submodules
+      SUBMODULE_TOKEN:
+        required: false
 
 env:
   PYTHON_VERSION: '3.14'
@@ -72,6 +75,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           submodules: recursive
+          token: ${{ secrets.SUBMODULE_TOKEN || github.token }}
 
       - name: Setup Dependencies Windows
         # if a dependency needs to be pinned, see https://github.com/LizardByte/build-deps/pull/186

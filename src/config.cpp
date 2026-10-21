@@ -861,6 +861,7 @@ namespace config {
     true,  // client gamepads with motion events use PlayStation-style emulation
     true,  // client gamepads with touchpads use PlayStation-style emulation
     true,  // virtualhid_randomize_mac
+    false,  // virtualhid_bluetooth_transport
 
     true,  // keyboard enabled
     false,  // key_rightalt_to_key_win
@@ -1858,6 +1859,7 @@ namespace config {
     bool_f(vars, "motion_as_ds4", input.motion_as_ds4);
     bool_f(vars, "touchpad_as_ds4", input.touchpad_as_ds4);
     bool_f(vars, "virtualhid_randomize_mac", input.virtualhid_randomize_mac);
+    bool_f(vars, "virtualhid_bluetooth_transport", input.virtualhid_bluetooth_transport);
 
     bool_f(vars, "mouse", input.mouse);
     bool_f(vars, "keyboard", input.keyboard);

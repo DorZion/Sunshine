@@ -202,6 +202,15 @@ watch(
                             default="true"
                   ></Checkbox>
                 </template>
+                <!-- Virtual HID option: Bluetooth report framing on Windows -->
+                <template v-if="platform === 'windows' && config.gamepad_driver !== 'vigembus' && (config.gamepad === 'ds4' || config.gamepad === 'ds5' || config.gamepad === 'auto')">
+                  <Checkbox class="mb-3"
+                            id="virtualhid_bluetooth_transport"
+                            locale-prefix="config"
+                            v-model="config.virtualhid_bluetooth_transport"
+                            default="false"
+                  ></Checkbox>
+                </template>
               </div>
             </div>
           </div>

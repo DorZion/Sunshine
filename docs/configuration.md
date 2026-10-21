@@ -433,7 +433,8 @@ consent prompt for directory ACLs, so the Web UI shows setup steps for correctin
         <td colspan="2">
             Allow Select/Back inputs to also trigger a PlayStation-style gamepad touchpad click. Useful
             for clients looking to emulate touchpad click on XInput devices.
-            @hint{Applies to ds4, ds5, and automatically selected PlayStation-style gamepads.}
+            @hint{Applies to ds4, ds5, and automatically selected PlayStation-style gamepads when the client
+            gamepad has no touchpad button of its own.}
         </td>
     </tr>
     <tr>
@@ -525,6 +526,32 @@ consent prompt for directory ACLs, so the Web UI shows setup steps for correctin
         <td>Example</td>
         <td colspan="2">@code{}
             virtualhid_randomize_mac = enabled
+            @endcode</td>
+    </tr>
+</table>
+
+### virtualhid_bluetooth_transport
+
+<table>
+    <tr>
+        <td>Description</td>
+        <td colspan="2">
+            Present PlayStation-style virtual controllers created by libvirtualhid with Bluetooth reports
+            instead of USB reports. Some games only use standard rumble on Bluetooth controllers and expect
+            DualSense haptics through a USB audio device that the virtual controller does not have.
+            @note{This option only applies to Windows.}
+        </td>
+    </tr>
+    <tr>
+        <td>Default</td>
+        <td colspan="2">@code{}
+            disabled
+            @endcode</td>
+    </tr>
+    <tr>
+        <td>Example</td>
+        <td colspan="2">@code{}
+            virtualhid_bluetooth_transport = enabled
             @endcode</td>
     </tr>
 </table>
